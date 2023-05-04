@@ -53,7 +53,18 @@ i2c_err_t i2c_mem_read(i2c_t* objP_this, uint16_t u16L_dev_address, uint16_t u16
     return eI2C_err_ok;
   }
 
-  return eI2C_err_init_fail;
+  return eI2C_err_send_fail;
+}
+
+i2c_err_t i2c_master_send_blocking(i2c_t* objP_this, uint16_t u16L_dev_address, uint8_t* u8PL_data, uint16_t u16L_size)
+{
+  if (objP_this != NULL && objP_this->i2c_handler != NULL && u8PL_data != NULL)
+  {
+    HAL_I2C_Master_Transmit(objP_this->i2c_handler, dev_address_shift(u16L_dev_address), u8PL_data, u16L_size, 100);
+    return eI2C_err_ok;
+  }
+
+  return eI2C_err_send_fail;
 }
 
 static uint16_t dev_address_shift(uint16_t u16L_dev_address)

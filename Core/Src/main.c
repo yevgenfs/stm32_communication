@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "lib/drivers/I2C/I2C.h"
 #include "lib/UL/HTU21D.h"
+#include "lib/drivers/lcd/lcd.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -135,7 +136,9 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   i2c_init(&obj_i2c);
-
+  lcd_init(&obj_i2c);
+  char *text = "EmbeddedThere";
+  char *text2 = "EmbeddedTher2";
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -143,17 +146,15 @@ int main(void)
   while (1)
   {
 
-//  i2c_mem_read(&obj_i2c, HTU21D_Adress, HTU21D_Temp_Cmd, I2C_MEMADD_SIZE_8BIT, HTU21D_RX_Data, 2);
-//  HTU21D_ADC_Raw = ((uint16_t)(HTU21D_RX_Data[0] << 8) | (HTU21D_RX_Data[1]));
-//  HTU21D_Temperature = (float)(HTU21D_ADC_Raw * 175.72 / 65536.00) - 46.85;
-//  HAL_Delay(100);
-//  /* Humidity ---->; */
-//  i2c_mem_read(&obj_i2c, HTU21D_Adress, HTU21D_Humi_Cmd, I2C_MEMADD_SIZE_8BIT, HTU21D_RX_Data, 2);
-//  HTU21D_ADC_Raw = ((uint16_t)(HTU21D_RX_Data[0] << 8) | (HTU21D_RX_Data[1]));
-//  HTU21D_Humidity = (float)(HTU21D_ADC_Raw * 125.0 / 65536.0) - 6.0;
-//  HAL_Delay(100);
-    HTU21D_handler(&obj_i2c);
-    HAL_Delay(100);
+//    HTU21D_handler(&obj_i2c);
+//    HAL_Delay(100);
+    lcd_clear(&obj_i2c);
+    lcd_set_cursor(&obj_i2c, 0, 0);
+    lcd_write_string(&obj_i2c, text);
+    lcd_set_cursor(&obj_i2c, 1, 0);
+    lcd_write_string(&obj_i2c, text2);
+//    memset(int_to_str, 0, sizeof(int_to_str));
+    HAL_Delay(1500);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

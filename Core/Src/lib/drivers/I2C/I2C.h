@@ -44,6 +44,8 @@ i2c_err_t i2c_init(i2c_t* objP_this);
 i2c_err_t i2c_mem_read(i2c_t* objP_this, uint16_t u16L_dev_address, uint16_t u16L_mem_address,
                        uint16_t u16L_mem_add_size, uint8_t* u8PL_data, uint16_t u16L_size);
 
+i2c_err_t i2c_master_send_blocking(i2c_t* objP_this, uint16_t u16L_dev_address, uint8_t* u8PL_data, uint16_t u16L_size);
+
 #ifdef __cplusplus
 }
 #endif
