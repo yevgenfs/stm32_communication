@@ -33,7 +33,6 @@ void lcd_write_nibble(i2c_t* objP_this, uint8_t nibble, uint8_t rs)
   data |= 1 << EN_BIT;
 //  i2c_master_send_blocking(objP_this, I2C_ADDR, &data, 1);
   en_ring_buffer(&ring_buffer, &data);
-  HAL_Delay(1);
   data &= ~(1 << EN_BIT);
 //  i2c_master_send_blocking(objP_this, I2C_ADDR, &data, 1);
   en_ring_buffer(&ring_buffer, &data);
@@ -42,15 +41,16 @@ void lcd_write_nibble(i2c_t* objP_this, uint8_t nibble, uint8_t rs)
 void lcd_handler(i2c_t* objP_this)
 {
   uint8_t u8L_data;
-  if(de_ring_buffer(&ring_buffer, &u8L_data) == e_ring_buffer_err_ok)
+  if(de_ring_buffer(&ring_buffer, &u8L_data) == e_ring_buffer_err_ok && i2c_get_state(objP_this) == eI2C_err_ok)
   {
-    i2c_master_send_blocking(objP_this, I2C_ADDR, &u8L_data, 1);
+    i2c_master_send(objP_this, I2C_ADDR, &u8L_data, 1);
+    HAL_Delay(1);
   }
 }
 
 void lcd_display(i2c_t* objPL_this)
 {
-  char *text  = "EmbeddedThere";
+  char *text  = "EmbeddedTher1";
   char *text2 = "EmbeddedTher2";
   lcd_clear(objPL_this);
   lcd_set_cursor(objPL_this, 0, 0);
@@ -82,18 +82,15 @@ void lcd_send_data(i2c_t* objPL_this, uint8_t data)
 void lcd_init(i2c_t* objPL_this)
 {
   create_ring_buffer(&ring_buffer, 500);
-  lcd_write_nibble(objPL_this, 0x03, 0);
-  HAL_Delay(5);
-  lcd_write_nibble(objPL_this, 0x03, 0);
   HAL_Delay(1);
   lcd_write_nibble(objPL_this, 0x03, 0);
-  HAL_Delay(1);
+  lcd_write_nibble(objPL_this, 0x03, 0);
+  lcd_write_nibble(objPL_this, 0x03, 0);
   lcd_write_nibble(objPL_this, 0x02, 0);
   lcd_send_cmd(objPL_this, 0x28);
   lcd_send_cmd(objPL_this, 0x0C);
   lcd_send_cmd(objPL_this, 0x06);
   lcd_send_cmd(objPL_this, 0x01);
-  HAL_Delay(2);
 }
 
 void lcd_write_string(i2c_t* objPL_this, char *str)
@@ -126,7 +123,6 @@ void lcd_set_cursor(i2c_t* objPL_this, uint8_t row, uint8_t column)
 void lcd_clear(i2c_t* objPL_this)
 {
   lcd_send_cmd(objPL_this, 0x01);
-  HAL_Delay(2);
 }
 
 void lcd_backlight(uint8_t state)
