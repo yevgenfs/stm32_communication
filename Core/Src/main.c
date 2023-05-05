@@ -23,8 +23,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "lib/drivers/I2C/I2C.h"
-#include "lib/UL/HTU21D.h"
-#include "lib/drivers/lcd/lcd.h"
+#include "lib/UL/HTU21D/HTU21D.h"
+#include "lib/UL/LCD/display.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -136,8 +136,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   i2c_init(&obj_i2c);
-  lcd_init(&obj_i2c);
-  lcd_display(&obj_i2c);
+  display_init();
+  display_write();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -148,8 +148,7 @@ int main(void)
 //    HTU21D_handler(&obj_i2c);
 //    HAL_Delay(100);
 
-    lcd_handler(&obj_i2c);
-//    HAL_Delay(1);
+      display_run(&obj_i2c);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
