@@ -60,7 +60,8 @@ i2c_err_t i2c_master_send_blocking(i2c_t* objP_this, uint16_t u16L_dev_address, 
 {
   if (objP_this != NULL && objP_this->i2c_handler != NULL && u8PL_data != NULL)
   {
-    HAL_I2C_Master_Transmit(objP_this->i2c_handler, dev_address_shift(u16L_dev_address), u8PL_data, u16L_size, 100);
+    HAL_I2C_Master_Transmit(objP_this->i2c_handler, dev_address_shift(u16L_dev_address), u8PL_data, u16L_size, 1);
+//    HAL_I2C_Master_Transmit_IT(objP_this->i2c_handler, dev_address_shift(u16L_dev_address), u8PL_data, u16L_size);
     return eI2C_err_ok;
   }
 

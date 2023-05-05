@@ -137,8 +137,7 @@ int main(void)
 
   i2c_init(&obj_i2c);
   lcd_init(&obj_i2c);
-  char *text = "EmbeddedThere";
-  char *text2 = "EmbeddedTher2";
+  lcd_display(&obj_i2c);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -148,13 +147,15 @@ int main(void)
 
 //    HTU21D_handler(&obj_i2c);
 //    HAL_Delay(100);
-    lcd_clear(&obj_i2c);
-    lcd_set_cursor(&obj_i2c, 0, 0);
-    lcd_write_string(&obj_i2c, text);
-    lcd_set_cursor(&obj_i2c, 1, 0);
-    lcd_write_string(&obj_i2c, text2);
+//    lcd_clear(&obj_i2c);
+//    lcd_set_cursor(&obj_i2c, 0, 0);
+//    lcd_write_string(&obj_i2c, text);
+//    lcd_set_cursor(&obj_i2c, 1, 0);
+//    lcd_write_string(&obj_i2c, text2);
 //    memset(int_to_str, 0, sizeof(int_to_str));
-    HAL_Delay(1500);
+
+    lcd_handler(&obj_i2c);
+    HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
