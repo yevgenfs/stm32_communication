@@ -21,7 +21,7 @@ void display_run(i2c_t* objP_this)
 
 void display_write(void)
 {
-  char *text  = "EmbeddedTher1";
+  char *text  = "EmbeddedTher3";
   char *text2 = "EmbeddedTher2";
   lcd_clear();
   lcd_set_cursor(0, 0);
