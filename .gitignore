@@ -50,3 +50,16 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+.cproject
+.mxproject
+stm32_communication Debug.launch
+stm32_communication.ioc
+.settings/language.settings.xml
+.settings/stm32cubeide.project.prefs
+Debug/makefile
+Debug/objects.list
+Debug/sources.mk
+Debug/stm32_communication.list
+Debug/Core/Src/subdir.mk
+Debug/Core/Src/lib/drivers/I2C/subdir.mk
+Debug/Core/Src/lib/UL/subdir.mk
