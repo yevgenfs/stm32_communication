@@ -204,14 +204,18 @@ int main(void)
    	/**************** The following operation is using f_write and f_read **************************/
 
    	/* Create second file with read write access and open it */
-   	fresult = f_open(&fil, "file2.txt", FA_CREATE_ALWAYS | FA_WRITE);
+   	fresult = f_open(&fil, "file2.txt", FA_CREATE_NEW | FA_WRITE);
+
+   	if (fresult == FR_EXIST)
+   	{
+   	  fresult = f_open(&fil, "file2.txt", FA_OPEN_APPEND | FA_WRITE);
+   	}
 
    	/* Writing text */
-   	strcpy (buffer, "This is File2.txt, written using ...f_write... and it says Hello from Controllerstech\n");
+   	strcpy (buffer, "This is File3.txt, written using ...f_write... and it says Hello from Controllerstech\n");
 
-   	char buffer2[BUFFER_SIZE] = "2This is File2.txt, written using ...f_write... and it says Hello from Controllerstech\n";  // to store strings..
-
-   	fresult = f_write(&fil, buffer2, bufsize(buffer2), &bw);
+   	fresult = f_write(&fil, buffer, bufsize(buffer), &bw);
+//   	f_puts("This data is from the FILE2.txt. And it was written using ...f_puts... ", &fil);
 
    	/* Close file */
    	fresult = f_close(&fil);

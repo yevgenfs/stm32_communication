@@ -13,9 +13,9 @@
 #define bool BYTE
 
 extern SPI_HandleTypeDef 	hspi1;
-#define HSPI_SDCARD		 	&hspi1
-#define	SD_CS_PORT			GPIOB
-#define SD_CS_PIN			GPIO_PIN_1
+#define HSPI_SDCARD		&hspi1
+#define	SD_CS_PORT		GPIOB
+#define SD_CS_PIN		GPIO_PIN_1
 
 extern volatile uint16_t Timer1, Timer2;					/* 1ms Timer Counter */
 
