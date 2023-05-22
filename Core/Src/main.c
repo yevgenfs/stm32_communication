@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "lib/drivers/I2C/I2C.h"
+#include "lib/drivers/SPI/SPI.h"
 #include "lib/UL/HTU21D/HTU21D.h"
 #include "lib/UL/LCD/display.h"
 #include "string.h"
@@ -54,13 +55,7 @@ SPI_HandleTypeDef hspi1;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
-//uint8_t HTU21D_RX_Data[2];
-//float HTU21D_Temperature;
-//float HTU21D_Humidity;
-//uint16_t HTU21D_ADC_Raw;
-//uint8_t HTU21D_Temp_Cmd = 0xE3;
-//uint8_t HTU21D_Humi_Cmd = 0xE5;
-//#define HTU21D_Adress (0x40)
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -76,6 +71,13 @@ i2c_t obj_i2c =
   .i2c_handler = &hi2c1,
   .i2c_type    = I2C1,
 };
+
+spi_t obj_spi =
+{
+  .spi_handler = &hspi1,
+  .spi_type    = SPI1,
+};
+
 
 /* USER CODE END PFP */
 
@@ -100,14 +102,16 @@ int i=0;
 
 int bufsize (char *buf)
 {
-	int i=0;
-	while (*buf++ != '\0') i++;
-	return i;
+  int i = 0;
+  while (*buf++ != '\0')
+    i++;
+  return i;
 }
 
 void clear_buffer (void)
 {
-	for (int i=0; i<BUFFER_SIZE; i++) buffer[i] = '\0';
+  for (int i = 0; i < BUFFER_SIZE; i++)
+    buffer[i] = '\0';
 }
 
 /* USER CODE END 0 */
@@ -147,135 +151,55 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   i2c_init(&obj_i2c);
+  SPI_init(&obj_spi);
   display_init();
   display_write();
 //_____________________________________
 
   HAL_Delay (500);
 
-   fresult = f_mount(&fs, "/", 1);
-   	if (fresult != FR_OK)
-   	{
+  fresult = f_mount (&fs, "/", 1);
+  if (fresult != FR_OK)
+  {
 
-   	}
-   	else
-   	{
+  }
 
-   	}
+  /*************** Card capacity details ********************/
 
+  /* Check free space */
+  f_getfree ("", &fre_clust, &pfs);
 
-   	/*************** Card capacity details ********************/
+  total = (uint32_t) ((pfs->n_fatent - 2) * pfs->csize * 0.5);
+  sprintf (buffer, "SD CARD Total Size: \t%lu\n", total);
+  clear_buffer ();
+  free_space = (uint32_t) (fre_clust * pfs->csize * 0.5);
+  sprintf (buffer, "SD CARD Free Space: \t%lu\n\n", free_space);
+  clear_buffer ();
 
-   	/* Check free space */
-   	f_getfree("", &fre_clust, &pfs);
+  /**************** The following operation is using f_write and f_read **************************/
 
-   	total = (uint32_t)((pfs->n_fatent - 2) * pfs->csize * 0.5);
-   	sprintf (buffer, "SD CARD Total Size: \t%lu\n",total);
-   	clear_buffer();
-   	free_space = (uint32_t)(fre_clust * pfs->csize * 0.5);
-   	sprintf (buffer, "SD CARD Free Space: \t%lu\n\n",free_space);
-   	clear_buffer();
+  /* Create second file with read write access and open it */
+  fresult = f_open (&fil, "file2.txt", FA_CREATE_NEW | FA_WRITE);
 
-   	/************* The following operation is using PUTS and GETS *********************/
+  if (fresult == FR_EXIST)
+  {
+    fresult = f_open (&fil, "file2.txt", FA_OPEN_APPEND | FA_WRITE);
+  }
 
-//   	/* Open file to write/ create a file if it doesn't exist */
-//       fresult = f_open(&fil, "file1.txt", FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
-//
-//       HAL_Delay(1000);
-//   	/* Writing text */
-//   	//int a = f_puts("This data is from the FILE1.txt. And it was written using ...f_puts... ", &fil);
-//   	HAL_Delay(1000);
-//   	/* Close file */
-//   	fresult = f_close(&fil);
-//   	HAL_Delay(1000);
-//   	if (fresult == FR_OK)
+  /* Writing text */
+  strcpy ( buffer,"This is File4.txt, written using ...f_write... and it says Hello from Controllerstech\n");
 
-   	/* Open file to read */
-//   	fresult = f_open(&fil, "file1.txt", FA_READ);
-//   	HAL_Delay(100);
-//   	/* Read string from the file */
-//   	f_gets(buffer, f_size(&fil), &fil);
-//   	HAL_Delay(100);
-//   	/* Close file */
-//   	f_close(&fil);
-//   	HAL_Delay(100);
-//   	clear_buffer();
+  fresult = f_write (&fil, buffer, bufsize (buffer), &bw);
 
-   	/**************** The following operation is using f_write and f_read **************************/
+  /* Close file */
+  fresult = f_close (&fil);
 
-   	/* Create second file with read write access and open it */
-   	fresult = f_open(&fil, "file2.txt", FA_CREATE_NEW | FA_WRITE);
+  // clearing buffer to show that result obtained is from the file
+  clear_buffer ();
 
-   	if (fresult == FR_EXIST)
-   	{
-   	  fresult = f_open(&fil, "file2.txt", FA_OPEN_APPEND | FA_WRITE);
-   	}
-
-   	/* Writing text */
-   	strcpy (buffer, "This is File3.txt, written using ...f_write... and it says Hello from Controllerstech\n");
-
-   	fresult = f_write(&fil, buffer, bufsize(buffer), &bw);
-//   	f_puts("This data is from the FILE2.txt. And it was written using ...f_puts... ", &fil);
-
-   	/* Close file */
-   	fresult = f_close(&fil);
-
-
-
-   	// clearing buffer to show that result obtained is from the file
-   	clear_buffer();
-
-//   	/* Open second file to read */
-//   	fresult = f_open(&fil, "file2.txt", FA_READ);
-//   	if (fresult == FR_OK)
-//
-//   	/* Read data from the file
-//   	 * Please see the function details for the arguments */
-//   	f_read (&fil, buffer, f_size(&fil), &br);
-//
-//   	/* Close file */
-//   	f_close(&fil);
-//
-//   	clear_buffer();
-//
-//
-//   	/*********************UPDATING an existing file ***************************/
-//
-//   	/* Open the file with write access */
-//   	fresult = f_open(&fil, "file2.txt", FA_OPEN_EXISTING | FA_READ | FA_WRITE);
-//
-//   	/* Move to offset to the end of the file */
-//   	fresult = f_lseek(&fil, f_size(&fil));
-//
-//   	if (fresult == FR_OK)
-//
-//   	/* write the string to the file */
-//   	fresult = f_puts("This is updated data and it should be in the end", &fil);
-//
-//   	f_close (&fil);
-//
-//   	clear_buffer();
-//
-//   	/* Open to read the file */
-//   	fresult = f_open (&fil, "file2.txt", FA_READ);
-//
-//   	/* Read string from the file */
-//   	fresult = f_read (&fil, buffer, f_size(&fil), &br);
-//   	if (fresult == FR_OK)
-//
-//   	/* Close file */
-//   	f_close(&fil);
-//
-//   	clear_buffer();
-//  	fresult = f_unlink("/FILE1.txt");
-//  	if (fresult == FR_OK);
-//
-//  	fresult = f_unlink("/FILE2.txt");
-//  	if (fresult == FR_OK);
-
-  	/* Unmount SDCARD */
-  	fresult = f_mount(NULL, "/", 1);
-  	if (fresult == FR_OK);
+  /* Unmount SDCARD */
+  fresult = f_mount (NULL, "/", 1);
+  if (fresult == FR_OK);
 
   /* USER CODE END 2 */
 
@@ -408,24 +332,24 @@ static void MX_SPI1_Init(void)
 
   /* USER CODE END SPI1_Init 1 */
   /* SPI1 parameter configuration*/
-  hspi1.Instance = SPI1;
-  hspi1.Init.Mode = SPI_MODE_MASTER;
-  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
-  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi1.Init.CRCPolynomial = 7;
-  hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-  hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
-  if (HAL_SPI_Init(&hspi1) != HAL_OK)
-  {
-    Error_Handler();
-  }
+//  hspi1.Instance = SPI1;
+//  hspi1.Init.Mode = SPI_MODE_MASTER;
+//  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+//  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+//  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+//  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+//  hspi1.Init.NSS = SPI_NSS_SOFT;
+//  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
+//  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+//  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+//  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+//  hspi1.Init.CRCPolynomial = 7;
+//  hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+//  hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+//  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */

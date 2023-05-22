@@ -41,8 +41,6 @@ DRESULT SD_disk_read (BYTE pdrv, BYTE* buff, DWORD sector, UINT count);
 DRESULT SD_disk_write (BYTE pdrv, const BYTE* buff, DWORD sector, UINT count);
 DRESULT SD_disk_ioctl (BYTE pdrv, BYTE cmd, void* buff);
 
-#define SPI_TIMEOUT 100
-
 
 
 #endif /* SRC_LIB_UL_SD_SD_H_ */
