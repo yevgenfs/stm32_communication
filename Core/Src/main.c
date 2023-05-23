@@ -18,12 +18,15 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "string.h"
+#include "fatfs.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "lib/drivers/I2C/I2C.h"
-#include "lib/UL/HTU21D.h"
+#include "lib/UL/HTU21D/HTU21D.h"
+#include "lib/UL/LCD/display.h"
+#include "string.h"
+#include "lib/UL/SD/SD.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -33,6 +36,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define SD_CS_GPIO_Port GPIOB
+#define SD_CS_Pin GPIO_PIN_1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -41,32 +46,12 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-#if defined ( __ICCARM__ ) /*!< IAR Compiler */
-#pragma location=0x2004c000
-ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-#pragma location=0x2004c0a0
-ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
-
-#elif defined ( __CC_ARM )  /* MDK ARM Compiler */
-
-__attribute__((at(0x2004c000))) ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-__attribute__((at(0x2004c0a0))) ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
-
-#elif defined ( __GNUC__ ) /* GNU Compiler */
-ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((section(".RxDecripSection"))); /* Ethernet Rx DMA Descriptors */
-ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDecripSection")));   /* Ethernet Tx DMA Descriptors */
-
-#endif
-
-ETH_TxPacketConfig TxConfig;
-
-ETH_HandleTypeDef heth;
 
 I2C_HandleTypeDef hi2c1;
 
-UART_HandleTypeDef huart3;
+SPI_HandleTypeDef hspi1;
 
-PCD_HandleTypeDef hpcd_USB_OTG_FS;
+UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
 //uint8_t HTU21D_RX_Data[2];
@@ -81,10 +66,9 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_ETH_Init(void);
 static void MX_USART3_UART_Init(void);
-static void MX_USB_OTG_FS_PCD_Init(void);
-//static void MX_I2C1_Init(void);
+static void MX_I2C1_Init(void);
+static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 
 i2c_t obj_i2c =
@@ -97,6 +81,34 @@ i2c_t obj_i2c =
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+FATFS fs;  // file system
+FIL fil; // File
+FILINFO fno;
+FRESULT fresult;  // result
+UINT br, bw;  // File read/write count
+
+/**** capacity related *****/
+FATFS *pfs;
+DWORD fre_clust;
+uint32_t total, free_space;
+
+#define BUFFER_SIZE 128
+char buffer[BUFFER_SIZE];  // to store strings..
+
+int i=0;
+
+int bufsize (char *buf)
+{
+	int i=0;
+	while (*buf++ != '\0') i++;
+	return i;
+}
+
+void clear_buffer (void)
+{
+	for (int i=0; i<BUFFER_SIZE; i++) buffer[i] = '\0';
+}
 
 /* USER CODE END 0 */
 
@@ -128,13 +140,142 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_ETH_Init();
   MX_USART3_UART_Init();
-  MX_USB_OTG_FS_PCD_Init();
-//  MX_I2C1_Init();
+  MX_I2C1_Init();
+  MX_SPI1_Init();
+  MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
 
   i2c_init(&obj_i2c);
+  display_init();
+  display_write();
+//_____________________________________
+
+  HAL_Delay (500);
+
+   fresult = f_mount(&fs, "/", 1);
+   	if (fresult != FR_OK)
+   	{
+
+   	}
+   	else
+   	{
+
+   	}
+
+
+   	/*************** Card capacity details ********************/
+
+   	/* Check free space */
+   	f_getfree("", &fre_clust, &pfs);
+
+   	total = (uint32_t)((pfs->n_fatent - 2) * pfs->csize * 0.5);
+   	sprintf (buffer, "SD CARD Total Size: \t%lu\n",total);
+   	clear_buffer();
+   	free_space = (uint32_t)(fre_clust * pfs->csize * 0.5);
+   	sprintf (buffer, "SD CARD Free Space: \t%lu\n\n",free_space);
+   	clear_buffer();
+
+   	/************* The following operation is using PUTS and GETS *********************/
+
+//   	/* Open file to write/ create a file if it doesn't exist */
+//       fresult = f_open(&fil, "file1.txt", FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
+//
+//       HAL_Delay(1000);
+//   	/* Writing text */
+//   	//int a = f_puts("This data is from the FILE1.txt. And it was written using ...f_puts... ", &fil);
+//   	HAL_Delay(1000);
+//   	/* Close file */
+//   	fresult = f_close(&fil);
+//   	HAL_Delay(1000);
+//   	if (fresult == FR_OK)
+
+   	/* Open file to read */
+//   	fresult = f_open(&fil, "file1.txt", FA_READ);
+//   	HAL_Delay(100);
+//   	/* Read string from the file */
+//   	f_gets(buffer, f_size(&fil), &fil);
+//   	HAL_Delay(100);
+//   	/* Close file */
+//   	f_close(&fil);
+//   	HAL_Delay(100);
+//   	clear_buffer();
+
+   	/**************** The following operation is using f_write and f_read **************************/
+
+   	/* Create second file with read write access and open it */
+   	fresult = f_open(&fil, "file2.txt", FA_CREATE_NEW | FA_WRITE);
+
+   	if (fresult == FR_EXIST)
+   	{
+   	  fresult = f_open(&fil, "file2.txt", FA_OPEN_APPEND | FA_WRITE);
+   	}
+
+   	/* Writing text */
+   	strcpy (buffer, "This is File3.txt, written using ...f_write... and it says Hello from Controllerstech\n");
+
+   	fresult = f_write(&fil, buffer, bufsize(buffer), &bw);
+//   	f_puts("This data is from the FILE2.txt. And it was written using ...f_puts... ", &fil);
+
+   	/* Close file */
+   	fresult = f_close(&fil);
+
+
+
+   	// clearing buffer to show that result obtained is from the file
+   	clear_buffer();
+
+//   	/* Open second file to read */
+//   	fresult = f_open(&fil, "file2.txt", FA_READ);
+//   	if (fresult == FR_OK)
+//
+//   	/* Read data from the file
+//   	 * Please see the function details for the arguments */
+//   	f_read (&fil, buffer, f_size(&fil), &br);
+//
+//   	/* Close file */
+//   	f_close(&fil);
+//
+//   	clear_buffer();
+//
+//
+//   	/*********************UPDATING an existing file ***************************/
+//
+//   	/* Open the file with write access */
+//   	fresult = f_open(&fil, "file2.txt", FA_OPEN_EXISTING | FA_READ | FA_WRITE);
+//
+//   	/* Move to offset to the end of the file */
+//   	fresult = f_lseek(&fil, f_size(&fil));
+//
+//   	if (fresult == FR_OK)
+//
+//   	/* write the string to the file */
+//   	fresult = f_puts("This is updated data and it should be in the end", &fil);
+//
+//   	f_close (&fil);
+//
+//   	clear_buffer();
+//
+//   	/* Open to read the file */
+//   	fresult = f_open (&fil, "file2.txt", FA_READ);
+//
+//   	/* Read string from the file */
+//   	fresult = f_read (&fil, buffer, f_size(&fil), &br);
+//   	if (fresult == FR_OK)
+//
+//   	/* Close file */
+//   	f_close(&fil);
+//
+//   	clear_buffer();
+//  	fresult = f_unlink("/FILE1.txt");
+//  	if (fresult == FR_OK);
+//
+//  	fresult = f_unlink("/FILE2.txt");
+//  	if (fresult == FR_OK);
+
+  	/* Unmount SDCARD */
+  	fresult = f_mount(NULL, "/", 1);
+  	if (fresult == FR_OK);
 
   /* USER CODE END 2 */
 
@@ -143,17 +284,10 @@ int main(void)
   while (1)
   {
 
-//  i2c_mem_read(&obj_i2c, HTU21D_Adress, HTU21D_Temp_Cmd, I2C_MEMADD_SIZE_8BIT, HTU21D_RX_Data, 2);
-//  HTU21D_ADC_Raw = ((uint16_t)(HTU21D_RX_Data[0] << 8) | (HTU21D_RX_Data[1]));
-//  HTU21D_Temperature = (float)(HTU21D_ADC_Raw * 175.72 / 65536.00) - 46.85;
-//  HAL_Delay(100);
-//  /* Humidity ---->; */
-//  i2c_mem_read(&obj_i2c, HTU21D_Adress, HTU21D_Humi_Cmd, I2C_MEMADD_SIZE_8BIT, HTU21D_RX_Data, 2);
-//  HTU21D_ADC_Raw = ((uint16_t)(HTU21D_RX_Data[0] << 8) | (HTU21D_RX_Data[1]));
-//  HTU21D_Humidity = (float)(HTU21D_ADC_Raw * 125.0 / 65536.0) - 6.0;
-//  HAL_Delay(100);
-    HTU21D_handler(&obj_i2c);
-    HAL_Delay(100);
+//    HTU21D_handler(&obj_i2c);
+//    HAL_Delay(100);
+
+    display_run(&obj_i2c);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -211,51 +345,90 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief ETH Initialization Function
+  * @brief I2C1 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_ETH_Init(void)
+static void MX_I2C1_Init(void)
 {
 
-  /* USER CODE BEGIN ETH_Init 0 */
+  /* USER CODE BEGIN I2C1_Init 0 */
 
-  /* USER CODE END ETH_Init 0 */
+  /* USER CODE END I2C1_Init 0 */
 
-   static uint8_t MACAddr[6];
+  /* USER CODE BEGIN I2C1_Init 1 */
 
-  /* USER CODE BEGIN ETH_Init 1 */
-
-  /* USER CODE END ETH_Init 1 */
-  heth.Instance = ETH;
-  MACAddr[0] = 0x00;
-  MACAddr[1] = 0x80;
-  MACAddr[2] = 0xE1;
-  MACAddr[3] = 0x00;
-  MACAddr[4] = 0x00;
-  MACAddr[5] = 0x00;
-  heth.Init.MACAddr = &MACAddr[0];
-  heth.Init.MediaInterface = HAL_ETH_RMII_MODE;
-  heth.Init.TxDesc = DMATxDscrTab;
-  heth.Init.RxDesc = DMARxDscrTab;
-  heth.Init.RxBuffLen = 1524;
-
-  /* USER CODE BEGIN MACADDRESS */
-
-  /* USER CODE END MACADDRESS */
-
-  if (HAL_ETH_Init(&heth) != HAL_OK)
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.Timing = 0x00808CD2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
   {
     Error_Handler();
   }
 
-  memset(&TxConfig, 0 , sizeof(ETH_TxPacketConfig));
-  TxConfig.Attributes = ETH_TX_PACKETS_FEATURES_CSUM | ETH_TX_PACKETS_FEATURES_CRCPAD;
-  TxConfig.ChecksumCtrl = ETH_CHECKSUM_IPHDR_PAYLOAD_INSERT_PHDR_CALC;
-  TxConfig.CRCPadCtrl = ETH_CRC_PAD_INSERT;
-  /* USER CODE BEGIN ETH_Init 2 */
+  /** Configure Analogue filter
+  */
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
-  /* USER CODE END ETH_Init 2 */
+  /** Configure Digital filter
+  */
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+  * @brief SPI1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI1_Init(void)
+{
+
+  /* USER CODE BEGIN SPI1_Init 0 */
+
+  /* USER CODE END SPI1_Init 0 */
+
+  /* USER CODE BEGIN SPI1_Init 1 */
+
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 7;
+  hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+  hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI1_Init 2 */
+
+  /* USER CODE END SPI1_Init 2 */
 
 }
 
@@ -295,41 +468,6 @@ static void MX_USART3_UART_Init(void)
 }
 
 /**
-  * @brief USB_OTG_FS Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USB_OTG_FS_PCD_Init(void)
-{
-
-  /* USER CODE BEGIN USB_OTG_FS_Init 0 */
-
-  /* USER CODE END USB_OTG_FS_Init 0 */
-
-  /* USER CODE BEGIN USB_OTG_FS_Init 1 */
-
-  /* USER CODE END USB_OTG_FS_Init 1 */
-  hpcd_USB_OTG_FS.Instance = USB_OTG_FS;
-  hpcd_USB_OTG_FS.Init.dev_endpoints = 6;
-  hpcd_USB_OTG_FS.Init.speed = PCD_SPEED_FULL;
-  hpcd_USB_OTG_FS.Init.dma_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
-  hpcd_USB_OTG_FS.Init.Sof_enable = ENABLE;
-  hpcd_USB_OTG_FS.Init.low_power_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.lpm_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.vbus_sensing_enable = ENABLE;
-  hpcd_USB_OTG_FS.Init.use_dedicated_ep1 = DISABLE;
-  if (HAL_PCD_Init(&hpcd_USB_OTG_FS) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USB_OTG_FS_Init 2 */
-
-  /* USER CODE END USB_OTG_FS_Init 2 */
-
-}
-
-/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -347,7 +485,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOG_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LD1_Pin|LD3_Pin|LD2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LD1_Pin|GPIO_PIN_1|LD3_Pin|LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(USB_PowerSwitchOn_GPIO_Port, USB_PowerSwitchOn_Pin, GPIO_PIN_RESET);
@@ -358,12 +496,36 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(USER_Btn_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LD1_Pin LD3_Pin LD2_Pin */
-  GPIO_InitStruct.Pin = LD1_Pin|LD3_Pin|LD2_Pin;
+  /*Configure GPIO pins : RMII_MDC_Pin RMII_RXD0_Pin RMII_RXD1_Pin */
+  GPIO_InitStruct.Pin = RMII_MDC_Pin|RMII_RXD0_Pin|RMII_RXD1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : RMII_REF_CLK_Pin RMII_MDIO_Pin RMII_CRS_DV_Pin */
+  GPIO_InitStruct.Pin = RMII_REF_CLK_Pin|RMII_MDIO_Pin|RMII_CRS_DV_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : LD1_Pin PB1 LD3_Pin LD2_Pin */
+  GPIO_InitStruct.Pin = LD1_Pin|GPIO_PIN_1|LD3_Pin|LD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : RMII_TXD1_Pin */
+  GPIO_InitStruct.Pin = RMII_TXD1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+  HAL_GPIO_Init(RMII_TXD1_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : USB_PowerSwitchOn_Pin */
   GPIO_InitStruct.Pin = USB_PowerSwitchOn_Pin;
@@ -378,32 +540,33 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(USB_OverCurrent_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : USB_SOF_Pin USB_ID_Pin USB_DM_Pin USB_DP_Pin */
+  GPIO_InitStruct.Pin = USB_SOF_Pin|USB_ID_Pin|USB_DM_Pin|USB_DP_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF10_OTG_FS;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : USB_VBUS_Pin */
+  GPIO_InitStruct.Pin = USB_VBUS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(USB_VBUS_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : RMII_TX_EN_Pin RMII_TXD0_Pin */
+  GPIO_InitStruct.Pin = RMII_TX_EN_Pin|RMII_TXD0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+  HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
+
 }
 
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
-
-/**
-  * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM1 interrupt took place, inside
-  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
-  * a global variable "uwTick" used as application time base.
-  * @param  htim : TIM handle
-  * @retval None
-  */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  /* USER CODE BEGIN Callback 0 */
-
-  /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM1) {
-    HAL_IncTick();
-  }
-  /* USER CODE BEGIN Callback 1 */
-
-  /* USER CODE END Callback 1 */
-}
 
 /**
   * @brief  This function is executed in case of error occurrence.

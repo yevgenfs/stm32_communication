@@ -53,10 +53,42 @@ i2c_err_t i2c_mem_read(i2c_t* objP_this, uint16_t u16L_dev_address, uint16_t u16
     return eI2C_err_ok;
   }
 
-  return eI2C_err_init_fail;
+  return eI2C_err_send_fail;
+}
+
+i2c_err_t i2c_master_send(i2c_t* objPL_this, uint16_t u16L_dev_address, uint8_t* u8PL_data, uint16_t u16L_size)
+{
+  if (objPL_this != NULL && objPL_this->i2c_handler != NULL && u8PL_data != NULL)
+  {
+    if (HAL_I2C_Master_Transmit_IT(objPL_this->i2c_handler, dev_address_shift(u16L_dev_address),
+				   u8PL_data, u16L_size) != HAL_OK)
+    {
+      return eI2C_err_send_fail;
+    }
+
+    return eI2C_err_ok;
+  }
+
+  return eI2C_err_send_fail;
 }
 
 static uint16_t dev_address_shift(uint16_t u16L_dev_address)
 {
   return (u16L_dev_address << 1);
 }
+
+i2c_err_t i2c_get_state(i2c_t* objPL_this)
+{
+  if (objPL_this == NULL || objPL_this->i2c_handler == NULL)
+  {
+    return eI2C_err_send_fail;
+  }
+
+  if (HAL_I2C_GetState(objPL_this->i2c_handler) == HAL_I2C_STATE_READY)
+  {
+    return eI2C_err_ok;
+  }
+
+  return eI2C_err_busy;
+}
+

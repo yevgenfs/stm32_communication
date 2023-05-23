@@ -39,10 +39,14 @@ typedef struct
 
  @return return type of error or ok if work correctly
 */
-i2c_err_t i2c_init(i2c_t* objP_this);
+i2c_err_t i2c_init(i2c_t* objPL_this);
 
-i2c_err_t i2c_mem_read(i2c_t* objP_this, uint16_t u16L_dev_address, uint16_t u16L_mem_address,
+i2c_err_t i2c_mem_read(i2c_t* objPL_this, uint16_t u16L_dev_address, uint16_t u16L_mem_address,
                        uint16_t u16L_mem_add_size, uint8_t* u8PL_data, uint16_t u16L_size);
+
+i2c_err_t i2c_master_send(i2c_t* objPL_this, uint16_t u16L_dev_address, uint8_t* u8PL_data, uint16_t u16L_size);
+
+i2c_err_t i2c_get_state(i2c_t* objPL_this);
 
 #ifdef __cplusplus
 }
