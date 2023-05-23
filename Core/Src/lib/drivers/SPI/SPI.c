@@ -7,15 +7,10 @@
 
 #include "SPI.h"
 #include "stm32f7xx_hal.h"
+#include "main.h"
 
 extern SPI_HandleTypeDef 	hspi1;
 #define HSPI_SDCARD		&hspi1
-#define	SD_CS_PORT		GPIOB
-#define SD_CS_PIN		GPIO_PIN_1
-
-/***************************************
- * SPI functions
- **************************************/
 
 spi_err_t SPI_init(spi_t* objPL_this)
 {
@@ -38,7 +33,7 @@ spi_err_t SPI_init(spi_t* objPL_this)
 
     if (HAL_SPI_Init (&hspi1) != HAL_OK)
     {
-
+      Error_Handler();
     }
 
     return eSPI_err_ok;
@@ -48,47 +43,47 @@ spi_err_t SPI_init(spi_t* objPL_this)
 }
 
 /* slave select */
-void SPI_select(void)
+void SPI_select(GPIO_TypeDef* objPL_port, uint16_t u16L_pin)
 {
-  HAL_GPIO_WritePin (SD_CS_PORT, SD_CS_PIN, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin (objPL_port, u16L_pin, GPIO_PIN_RESET);
   HAL_Delay (1);
 }
 
 /* slave deselect */
-void SPI_deselect(void)
+void SPI_deselect(GPIO_TypeDef* objPL_port, uint16_t u16L_pin)
 {
-  HAL_GPIO_WritePin (SD_CS_PORT, SD_CS_PIN, GPIO_PIN_SET);
+  HAL_GPIO_WritePin (objPL_port, u16L_pin, GPIO_PIN_SET);
   HAL_Delay (1);
 }
 
 /* SPI transmit a byte */
-void SPI_tx_byte(uint8_t data)
+void SPI_tx_byte(spi_t* objPL_this, uint8_t data)
 {
-  while (!__HAL_SPI_GET_FLAG(HSPI_SDCARD, SPI_FLAG_TXE));
-  HAL_SPI_Transmit (HSPI_SDCARD, &data, 1, SPI_TIMEOUT);
+  while (!__HAL_SPI_GET_FLAG(objPL_this->spi_handler, SPI_FLAG_TXE));
+  HAL_SPI_Transmit (objPL_this->spi_handler, &data, 1, SPI_TIMEOUT);
 }
 
 /* SPI transmit buffer */
-void SPI_tx_buffer(uint8_t *buffer, uint16_t len)
+void SPI_tx_buffer(spi_t* objPL_this, uint8_t *buffer, uint16_t len)
 {
-  while (!__HAL_SPI_GET_FLAG(HSPI_SDCARD, SPI_FLAG_TXE));
-  HAL_SPI_Transmit (HSPI_SDCARD, buffer, len, SPI_TIMEOUT);
+  while (!__HAL_SPI_GET_FLAG(objPL_this->spi_handler, SPI_FLAG_TXE));
+  HAL_SPI_Transmit (objPL_this->spi_handler, buffer, len, SPI_TIMEOUT);
 }
 
 /* SPI receive a byte */
-uint8_t SPI_rx_byte(void)
+uint8_t SPI_rx_byte(spi_t* objPL_this)
 {
   uint8_t dummy, data;
   dummy = 0xFF;
 
-  while (!__HAL_SPI_GET_FLAG(HSPI_SDCARD, SPI_FLAG_TXE));
-  HAL_SPI_TransmitReceive (HSPI_SDCARD, &dummy, &data, 1, SPI_TIMEOUT);
+  while (!__HAL_SPI_GET_FLAG(objPL_this->spi_handler, SPI_FLAG_TXE));
+  HAL_SPI_TransmitReceive (objPL_this->spi_handler, &dummy, &data, 1, SPI_TIMEOUT);
 
   return data;
 }
 
 /* SPI receive a byte via pointer */
-void SPI_rx_byte_ptr(uint8_t *buff)
+void SPI_rx_byte_ptr(spi_t* objPL_this, uint8_t *buff)
 {
-  *buff = SPI_rx_byte ();
+  *buff = SPI_rx_byte (objPL_this);
 }

@@ -187,7 +187,7 @@ int main(void)
   }
 
   /* Writing text */
-  strcpy ( buffer,"This is File4.txt, written using ...f_write... and it says Hello from Controllerstech\n");
+  strcpy ( buffer,"This is File5.txt, written using ...f_write... and it says Hello from Controllerstech\n");
 
   fresult = f_write (&fil, buffer, bufsize (buffer), &bw);
 
