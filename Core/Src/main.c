@@ -74,8 +74,8 @@ i2c_t obj_i2c =
 
 spi_t obj_spi =
 {
-  .spi_handler = &hspi1,
-  .spi_type    = SPI1,
+  .obj_spi_handler = &hspi1,
+  .obj_spi_type    = SPI1,
 };
 
 
@@ -187,7 +187,7 @@ int main(void)
   }
 
   /* Writing text */
-  strcpy ( buffer,"This is File5.txt, written using ...f_write... and it says Hello from Controllerstech\n");
+  strcpy ( buffer,"This is File6.txt, written using ...f_write... and it says Hello from Controllerstech\n");
 
   fresult = f_write (&fil, buffer, bufsize (buffer), &bw);
 

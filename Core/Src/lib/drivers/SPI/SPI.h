@@ -28,8 +28,8 @@ typedef enum SPIErr
 /// @brief obj_uart_t struct which express instance of uart
 typedef struct
 {
-  SPI_HandleTypeDef* spi_handler;
-  SPI_TypeDef*       spi_type;
+  SPI_HandleTypeDef* obj_spi_handler;
+  SPI_TypeDef*       obj_spi_type;
 } spi_t;
 
 spi_err_t SPI_init(spi_t* objPL_this);
@@ -41,15 +41,15 @@ void SPI_select(GPIO_TypeDef * objPL_port, uint16_t u16L_pin);
 void SPI_deselect(GPIO_TypeDef * objPL_port, uint16_t u16L_pin);
 
 /* SPI transmit a byte */
-void SPI_tx_byte(spi_t* objPL_this, uint8_t data);
+void SPI_tx_byte(spi_t* objPL_this, uint8_t u8L_data);
 
 /* SPI transmit buffer */
-void SPI_tx_buffer(spi_t* objPL_this, uint8_t *buffer, uint16_t len);
+void SPI_tx_buffer(spi_t* objPL_this, uint8_t* u8PL_buffer, uint16_t u16L_len);
 
 /* SPI receive a byte */
 uint8_t SPI_rx_byte(spi_t* objPL_this);
 
 /* SPI receive a byte via pointer */
-void SPI_rx_byte_ptr(spi_t* objPL_this, uint8_t *buff);
+void SPI_rx_byte_ptr(spi_t* objPL_this, uint8_t* u8PL_buff);
 
 #endif /* SRC_LIB_DRIVERS_SPI_SPI_H_ */
