@@ -52,16 +52,16 @@
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-volatile uint8_t FatFsCnt = 0;
-volatile uint16_t Timer1, Timer2;
+volatile uint8_t u8_fat_fs_cnt = 0;
+volatile uint16_t u16_timer1, u16_timer2;
 
 void SDTimer_Handler(void)
 {
-  if(Timer1 > 0)
-    Timer1--;
+  if(u16_timer1 > 0)
+    u16_timer1--;
 
-  if(Timer2 > 0)
-    Timer2--;
+  if(u16_timer2 > 0)
+    u16_timer2--;
 }
 
 /* USER CODE END 0 */
@@ -196,10 +196,10 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-  FatFsCnt++;
-  if(FatFsCnt >= 10)
+  u8_fat_fs_cnt++;
+  if(u8_fat_fs_cnt >= 10)
   {
-    FatFsCnt = 0;
+    u8_fat_fs_cnt = 0;
     SDTimer_Handler();
   }
   /* USER CODE END SysTick_IRQn 0 */
