@@ -52,23 +52,25 @@
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-volatile uint8_t u8_fat_fs_cnt = 0;
-volatile uint16_t u16_timer1, u16_timer2;
+// volatile uint8_t u8_fat_fs_cnt = 0;
+// volatile uint16_t u16_timer1, u16_timer2;
 
-void SDTimer_Handler(void)
-{
-  if(u16_timer1 > 0)
-    u16_timer1--;
+// void SDTimer_Handler(void)
+// {
+//   if(u16_timer1 > 0)
+//     u16_timer1--;
 
-  if(u16_timer2 > 0)
-    u16_timer2--;
-}
+//   if(u16_timer2 > 0)
+//     u16_timer2--;
+// }
 
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
 extern I2C_HandleTypeDef hi2c1;
 extern SPI_HandleTypeDef hspi1;
+extern TIM_HandleTypeDef htim3;
+
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -196,14 +198,14 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-  u8_fat_fs_cnt++;
-  if(u8_fat_fs_cnt >= 10)
-  {
-    u8_fat_fs_cnt = 0;
-    SDTimer_Handler();
-  }
+//  u8_fat_fs_cnt++;
+//  if(u8_fat_fs_cnt >= 10)
+//  {
+//    u8_fat_fs_cnt = 0;
+//    SDTimer_Handler();
+//  }
   /* USER CODE END SysTick_IRQn 0 */
-  HAL_IncTick();
+
   /* USER CODE BEGIN SysTick_IRQn 1 */
 
   /* USER CODE END SysTick_IRQn 1 */
@@ -215,6 +217,20 @@ void SysTick_Handler(void)
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32f7xx.s).                    */
 /******************************************************************************/
+
+/**
+  * @brief This function handles TIM3 global interrupt.
+  */
+void TIM3_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM3_IRQn 0 */
+
+  /* USER CODE END TIM3_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim3);
+  /* USER CODE BEGIN TIM3_IRQn 1 */
+
+  /* USER CODE END TIM3_IRQn 1 */
+}
 
 /**
   * @brief This function handles I2C1 event interrupt.
