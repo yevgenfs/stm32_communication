@@ -10,8 +10,10 @@
 
 #include "stdint.h"
 #include "../I2C/I2C.h"
+#include "FreeRTOS.h"
+#include "queue.h"
 
-void lcd_init(void);
+void lcd_init(QueueHandle_t* objPL_display_buff);
 
 void lcd_write_string(char *str);
 

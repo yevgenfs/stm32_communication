@@ -8,10 +8,14 @@
 #include "SD.h"
 #include "stm32f7xx_hal.h"
 #include  "../../drivers/SPI/SPI.h"
+#include "fatfs.h"
+#include <stdio.h>
+#include "../HTU21D/HTU21D.h"
 
 #define TRUE  1
 #define FALSE 0
 #define bool BYTE
+#define BUFFER_SIZE 128
 
 extern SPI_HandleTypeDef 	hspi1;
 extern spi_t 	                obj_spi;
@@ -25,6 +29,46 @@ static volatile DSTATUS objS_stat = STA_NOINIT;	/* Disk Status */
 static uint8_t u8S_card_type;                    /* Type 0:MMC, 1:SDC, 2:Block addressing */
 static uint8_t u8LS_power_flag = 0;				/* Power flag */
 
+static int bufsize (char *buf)
+{
+  int i = 0;
+  while (*buf++ != '\0')
+    i++;
+  return i;
+}
+
+void sd_write(void)
+{
+  FATFS fs;  // file system
+  FIL fil; // File
+  FRESULT fresult;  // result
+  UINT bw;  // File read/write count
+  char buffer[32];  // to store strings..
+  htu21d_t* opjPL_sensor_value = HTU21D_get_sensor_data();
+
+  fresult = f_mount(&fs, "/", 1);
+
+  /* Create second file with read write access and open it */
+  fresult = f_open(&fil, "log.txt", FA_CREATE_NEW | FA_WRITE);
+
+  if (fresult == FR_EXIST)
+  {
+    fresult = f_open(&fil, "log.txt", FA_OPEN_APPEND | FA_WRITE);
+  }
+
+  /* Writing text */
+  snprintf(buffer, 32, "temp = %d.%d hum = %d.%d \n", opjPL_sensor_value->s16_temperature / 10,
+	    opjPL_sensor_value->s16_temperature % 10, opjPL_sensor_value->s16_humidity / 10,
+	    opjPL_sensor_value->s16_humidity % 10);
+
+  fresult = f_write(&fil, buffer, bufsize (buffer), &bw);
+
+  /* Close file */
+  fresult = f_close(&fil);
+
+  /* Unmount SDCARD */
+  fresult = f_mount(NULL, "/", 1);
+}
 
 /***************************************
  * SD functions

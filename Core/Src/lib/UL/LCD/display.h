@@ -9,8 +9,12 @@
 #define SRC_LIB_UL_LCD_DISPLAY_H_
 
 #include "../../drivers/I2C/I2C.h"
+#include "FreeRTOS.h"
+#include "queue.h"
 
-void display_init(void);
+void display_init(QueueHandle_t* objPL_display_buff);
+
+void display_write_test(void);
 
 void display_write(void);
 
