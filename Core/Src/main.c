@@ -190,49 +190,6 @@ int main(void)
 
   HAL_Delay (500);
 
-  fresult = f_mount (&fs, "/", 1);
-  if (fresult != FR_OK)
-  {
-
-  }
-
-  /*************** Card capacity details ********************/
-
-  /* Check free space */
-  f_getfree ("", &fre_clust, &pfs);
-
-  total = (uint32_t) ((pfs->n_fatent - 2) * pfs->csize * 0.5);
-//  sprintf (buffer, "SD CARD Total Size: \t%lu\n", total);
-  clear_buffer ();
-  free_space = (uint32_t) (fre_clust * pfs->csize * 0.5);
-//  sprintf (buffer, "SD CARD Free Space: \t%lu\n\n", free_space);
-  clear_buffer ();
-
-  /**************** The following operation is using f_write and f_read **************************/
-
-  /* Create second file with read write access and open it */
-  fresult = f_open (&fil, "file2.txt", FA_CREATE_NEW | FA_WRITE);
-
-  if (fresult == FR_EXIST)
-  {
-    fresult = f_open (&fil, "file2.txt", FA_OPEN_APPEND | FA_WRITE);
-  }
-
-  /* Writing text */
-  strcpy ( buffer,"This is File9.txt, written using ...f_write... and it says Hello from Controllerstech\n");
-
-  fresult = f_write (&fil, buffer, bufsize (buffer), &bw);
-
-  /* Close file */
-  fresult = f_close (&fil);
-
-  // clearing buffer to show that result obtained is from the file
-  clear_buffer ();
-
-  /* Unmount SDCARD */
-  fresult = f_mount (NULL, "/", 1);
-  if (fresult == FR_OK);
-
   /* USER CODE END 2 */
 
   /* Init scheduler */
