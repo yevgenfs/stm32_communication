@@ -70,7 +70,7 @@ const osThreadAttr_t defaultTask_attributes = {
 
 /* Definitions for spinner_task */
 xTaskHandle display_taskHandle;
-//xTaskHandle SD_taskHandle;
+xTaskHandle SD_taskHandle;
 xTaskHandle HTU_taskHandle;
 
 i2c_t obj_i2c =
@@ -261,8 +261,8 @@ int main(void)
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   xTaskCreate(display_task_entry, "display_task", 128 * 4, NULL, 32 | portPRIVILEGE_BIT, &display_taskHandle);
-//  xTaskCreate(SD_task_entry, "SD_task", 128 * 4, NULL, 33 | portPRIVILEGE_BIT, &SD_taskHandle);
-  xTaskCreate(HTU_task_entry, "HTU_task", 128 * 4, NULL, 34 | portPRIVILEGE_BIT, &HTU_taskHandle);
+  xTaskCreate(SD_task_entry, "SD_task", 2 *128 * 4, NULL, 34 | portPRIVILEGE_BIT, &SD_taskHandle);
+  xTaskCreate(HTU_task_entry, "HTU_task", 128 * 4, NULL, 33 | portPRIVILEGE_BIT, &HTU_taskHandle);
 
   /* USER CODE END RTOS_THREADS */
 
@@ -588,8 +588,9 @@ void display_task_entry(void *pvParameters)
 /* USER CODE END Header_button_task_entry */
 void SD_task_entry(void *pvParameters)
 {
-    volatile uint32_t SD_period_ms = 120000;
+    volatile uint32_t SD_period_ms = 60500;
 
+    vTaskDelay(SD_period_ms);
     /* Infinite loop */
     for (;;)
     {
@@ -608,7 +609,7 @@ void SD_task_entry(void *pvParameters)
 /* USER CODE END Header_button_task_entry */
 void HTU_task_entry(void *pvParameters)
 {
-    volatile uint32_t HTU_period_ms = 17500;
+    volatile uint32_t HTU_period_ms = 15000;
     display_init(&obj_display_que);
     vTaskDelay(HTU_period_ms);
     /* Infinite loop */

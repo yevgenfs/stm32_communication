@@ -38,23 +38,6 @@ void display_write_test(void)
   lcd_write_string(text2);
 }
 
-static void string_handler(char* arr)
-{
-  uint8_t u8L_is_empty = 0;
-  for (int i = 0; i < 16; i++)
-  {
-    if (u8L_is_empty == 1)
-    {
-      arr[i] = '\0';
-    }
-
-    if (arr[i] == '\0')
-    {
-      u8L_is_empty = 1;
-    }
-  }
-}
-
 void display_write(void)
 {
   htu21d_t* opjPL_sensor_value = HTU21D_get_sensor_data();
@@ -62,18 +45,12 @@ void display_write(void)
   char row2[16] = {0};  // to store strings..
 
   /* Writing text */
-  snprintf(row1, 16, "temp = %d.%d", abs(opjPL_sensor_value->s16_temperature / 10),
+  snprintf(row1, 16, "temp = %d.%d", opjPL_sensor_value->s16_temperature / 10,
 	    abs(opjPL_sensor_value->s16_temperature) % 10);
 
   /* Writing text */
-  snprintf(row2, 16, "hum  = %d.%d ", abs(opjPL_sensor_value->s16_humidity / 10),
+  snprintf(row2, 16, "hum  = %d.%d ", opjPL_sensor_value->s16_humidity / 10,
 	    abs(opjPL_sensor_value->s16_humidity) % 10);
-
-//    char row1[16] = "hello";  // to store strings..
-//    char row2[16] = "world";  // to store strings..
-
-  string_handler(row1);
-  string_handler(row2);
 
   lcd_clear();
   lcd_set_cursor(0, 0);

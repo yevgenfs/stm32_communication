@@ -43,7 +43,7 @@ void sd_write(void)
   FIL fil; // File
   FRESULT fresult;  // result
   UINT bw;  // File read/write count
-  char buffer[32];  // to store strings..
+  char buffer[26];  // to store strings..
   htu21d_t* opjPL_sensor_value = HTU21D_get_sensor_data();
 
   fresult = f_mount(&fs, "/", 1);
@@ -57,7 +57,7 @@ void sd_write(void)
   }
 
   /* Writing text */
-  snprintf(buffer, 32, "temp = %d.%d hum = %d.%d \n", opjPL_sensor_value->s16_temperature / 10,
+  snprintf(buffer, 26, "temp = %d.%d hum = %d.%d \n", opjPL_sensor_value->s16_temperature / 10,
 	    opjPL_sensor_value->s16_temperature % 10, opjPL_sensor_value->s16_humidity / 10,
 	    opjPL_sensor_value->s16_humidity % 10);
 
@@ -68,6 +68,8 @@ void sd_write(void)
 
   /* Unmount SDCARD */
   fresult = f_mount(NULL, "/", 1);
+
+  fresult = f_write(&fil, buffer, bufsize (buffer), &bw);
 }
 
 /***************************************
