@@ -19,30 +19,11 @@ const uint8_t u8C_humi_Cmd = 0xE5;
 
 void HTU21D_handler(i2c_t* objPL_this)
 {
-//  static uint8_t u8SL_measure_change = 0;
-//
-//  if (u8SL_measure_change == 1)
-//  {
-////    objS_htu21d.s16_temperature = get_temperature(objPL_this);
-//    u8SL_measure_change = 0;
-//  }
-//  else
-//  {
-////    objS_htu21d.s16_humidity = get_humidity(objPL_this);
-//    u8SL_measure_change = 1;
-//  }
-
   objS_htu21d.s16_temperature = get_temperature(objPL_this);
   vTaskDelay(100);
   objS_htu21d.s16_humidity = get_humidity(objPL_this);
   vTaskDelay(100);
 
-////  HAL_Delay(100);
-//  objS_htu21d.s16_humidity = get_humidity(objPL_this);
-//  objS_htu21d.s16_temperature = 0;
-//  HAL_Delay(100);
-//  objS_htu21d.s16_humidity = 0;
-//  HAL_Delay(100);
   display_write();
 }
 

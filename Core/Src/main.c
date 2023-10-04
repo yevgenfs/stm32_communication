@@ -526,7 +526,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_button_task_entry */
 void display_task_entry(void *pvParameters)
 {
-    volatile uint8_t display_period_ms = 52;
+    volatile uint8_t display_period_ms = 10;
     /* Infinite loop */
     for (;;)
     {
