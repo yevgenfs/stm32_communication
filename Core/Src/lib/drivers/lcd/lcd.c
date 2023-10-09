@@ -23,16 +23,24 @@
 
 // Define global variable for backlight state
 static uint8_t backlight_state = 1;
-static ring_buffer_t ring_buffer;
+//static ring_buffer_t ring_buffer;
+
+static QueueHandle_t* objPS_display_buff;
 
 static void lcd_write_nibble(uint8_t nibble, uint8_t rs);
 static void lcd_send_data(uint8_t data);
 static void lcd_send_cmd(uint8_t cmd);
 
-void lcd_init(void)
+void lcd_init(QueueHandle_t* objPL_display_buff)
 {
-  create_ring_buffer(&ring_buffer, 500);
-  HAL_Delay(1);
+  if (objPL_display_buff == NULL)
+  {
+    return;
+  }
+
+
+  objPS_display_buff = objPL_display_buff;
+
   lcd_write_nibble(0x03, 0);
   lcd_write_nibble(0x03, 0);
   lcd_write_nibble(0x03, 0);
@@ -49,15 +57,16 @@ static void lcd_write_nibble(uint8_t nibble, uint8_t rs)
   data |= rs << RS_BIT;
   data |= backlight_state << BL_BIT; // Include backlight state in data
   data |= 1 << EN_BIT;
-  en_ring_buffer(&ring_buffer, &data);
+  xQueueSend(*objPS_display_buff, &data, 5);
   data &= ~(1 << EN_BIT);
-  en_ring_buffer(&ring_buffer, &data);
+  xQueueSend(*objPS_display_buff, &data, 5);
 }
 
 void lcd_handler(i2c_t* objP_this)
 {
   uint8_t u8L_data;
-  if(de_ring_buffer(&ring_buffer, &u8L_data) == e_ring_buffer_err_ok && i2c_get_state(objP_this) == eI2C_err_ok)
+
+  if(xQueueReceive(*objPS_display_buff, &u8L_data, 5) && i2c_get_state(objP_this) == eI2C_err_ok)
   {
     i2c_master_send(objP_this, I2C_ADDR, &u8L_data, 1);
     HAL_Delay(1);

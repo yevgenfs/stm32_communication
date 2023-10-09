@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 #include "fatfs.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -28,6 +29,10 @@
 #include "lib/UL/LCD/display.h"
 #include "string.h"
 #include "lib/UL/SD/SD.h"
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "task.h"
+//#include "message_buffer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -54,17 +59,19 @@ SPI_HandleTypeDef hspi1;
 
 UART_HandleTypeDef huart3;
 
+/* Definitions for defaultTask */
+osThreadId_t defaultTaskHandle;
+const osThreadAttr_t defaultTask_attributes = {
+  .name = "defaultTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
 /* USER CODE BEGIN PV */
 
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_USART3_UART_Init(void);
-static void MX_I2C1_Init(void);
-static void MX_SPI1_Init(void);
-/* USER CODE BEGIN PFP */
+/* Definitions for spinner_task */
+xTaskHandle display_taskHandle;
+xTaskHandle SD_taskHandle;
+xTaskHandle HTU_taskHandle;
 
 i2c_t obj_i2c =
 {
@@ -77,7 +84,21 @@ spi_t obj_spi =
   .obj_spi_handler = &hspi1,
   .obj_spi_type    = SPI1,
 };
+/* USER CODE END PV */
 
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_USART3_UART_Init(void);
+static void MX_I2C1_Init(void);
+static void MX_SPI1_Init(void);
+void StartDefaultTask(void *argument);
+
+/* USER CODE BEGIN PFP */
+void display_task_entry(void *pvParameters);
+void SD_task_entry(void *pvParameters);
+void HTU_task_entry(void *pvParameters);
+QueueHandle_t obj_display_que;
 
 /* USER CODE END PFP */
 
@@ -112,6 +133,18 @@ void clear_buffer (void)
 {
   for (int i = 0; i < BUFFER_SIZE; i++)
     buffer[i] = '\0';
+}
+
+volatile uint8_t u8_fat_fs_cnt = 0;
+volatile uint16_t u16_timer1, u16_timer2;
+
+void SDTimer_Handler(void)
+{
+  if(u16_timer1 > 0)
+    u16_timer1--;
+
+  if(u16_timer2 > 0)
+    u16_timer2--;
 }
 
 /* USER CODE END 0 */
@@ -152,57 +185,52 @@ int main(void)
 
   i2c_init(&obj_i2c);
   SPI_init(&obj_spi);
-  display_init();
-  display_write();
+//  display_write_test();
 //_____________________________________
 
   HAL_Delay (500);
 
-  fresult = f_mount (&fs, "/", 1);
-  if (fresult != FR_OK)
-  {
-
-  }
-
-  /*************** Card capacity details ********************/
-
-  /* Check free space */
-  f_getfree ("", &fre_clust, &pfs);
-
-  total = (uint32_t) ((pfs->n_fatent - 2) * pfs->csize * 0.5);
-  sprintf (buffer, "SD CARD Total Size: \t%lu\n", total);
-  clear_buffer ();
-  free_space = (uint32_t) (fre_clust * pfs->csize * 0.5);
-  sprintf (buffer, "SD CARD Free Space: \t%lu\n\n", free_space);
-  clear_buffer ();
-
-  /**************** The following operation is using f_write and f_read **************************/
-
-  /* Create second file with read write access and open it */
-  fresult = f_open (&fil, "file2.txt", FA_CREATE_NEW | FA_WRITE);
-
-  if (fresult == FR_EXIST)
-  {
-    fresult = f_open (&fil, "file2.txt", FA_OPEN_APPEND | FA_WRITE);
-  }
-
-  /* Writing text */
-  strcpy ( buffer,"This is File6.txt, written using ...f_write... and it says Hello from Controllerstech\n");
-
-  fresult = f_write (&fil, buffer, bufsize (buffer), &bw);
-
-  /* Close file */
-  fresult = f_close (&fil);
-
-  // clearing buffer to show that result obtained is from the file
-  clear_buffer ();
-
-  /* Unmount SDCARD */
-  fresult = f_mount (NULL, "/", 1);
-  if (fresult == FR_OK);
-
   /* USER CODE END 2 */
 
+  /* Init scheduler */
+  osKernelInitialize();
+
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  obj_display_que = xQueueCreate(200, sizeof(uint8_t));
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* creation of defaultTask */
+  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  xTaskCreate(display_task_entry, "display_task", 128 * 4, NULL, 32 | portPRIVILEGE_BIT, &display_taskHandle);
+  xTaskCreate(SD_task_entry, "SD_task", 2 *128 * 4, NULL, 34 | portPRIVILEGE_BIT, &SD_taskHandle);
+  xTaskCreate(HTU_task_entry, "HTU_task", 128 * 4, NULL, 33 | portPRIVILEGE_BIT, &HTU_taskHandle);
+
+  /* USER CODE END RTOS_THREADS */
+
+  /* USER CODE BEGIN RTOS_EVENTS */
+  /* add events, ... */
+  /* USER CODE END RTOS_EVENTS */
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -332,24 +360,24 @@ static void MX_SPI1_Init(void)
 
   /* USER CODE END SPI1_Init 1 */
   /* SPI1 parameter configuration*/
-//  hspi1.Instance = SPI1;
-//  hspi1.Init.Mode = SPI_MODE_MASTER;
-//  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-//  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-//  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-//  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-//  hspi1.Init.NSS = SPI_NSS_SOFT;
-//  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
-//  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-//  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-//  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-//  hspi1.Init.CRCPolynomial = 7;
-//  hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-//  hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
-//  if (HAL_SPI_Init(&hspi1) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 7;
+  hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+  hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
@@ -490,7 +518,113 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+/**
+ * @brief Function implementing the display_task thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_button_task_entry */
+void display_task_entry(void *pvParameters)
+{
+    volatile uint8_t display_period_ms = 10;
+    /* Infinite loop */
+    for (;;)
+    {
+      display_run(&obj_i2c);
+      vTaskDelay(display_period_ms);
+    }
+
+    vTaskDelay(0);
+}
+
+/**
+ * @brief Function implementing the SD_task thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_button_task_entry */
+void SD_task_entry(void *pvParameters)
+{
+    volatile uint32_t SD_period_ms = 60500;
+
+    vTaskDelay(SD_period_ms);
+    /* Infinite loop */
+    for (;;)
+    {
+      sd_write();
+      vTaskDelay(SD_period_ms);
+    }
+
+    vTaskDelay(0);
+}
+
+/**
+ * @brief Function implementing the HTU_task thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_button_task_entry */
+void HTU_task_entry(void *pvParameters)
+{
+    volatile uint32_t HTU_period_ms = 15000;
+    display_init(&obj_display_que);
+    vTaskDelay(HTU_period_ms);
+    /* Infinite loop */
+    for (;;)
+    {
+      HTU21D_handler(&obj_i2c);
+      vTaskDelay(HTU_period_ms);
+    }
+
+    vTaskDelay(0);
+}
+
+
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_StartDefaultTask */
+/**
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartDefaultTask */
+void StartDefaultTask(void *argument)
+{
+  /* USER CODE BEGIN 5 */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END 5 */
+}
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM3 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+  u8_fat_fs_cnt++;
+  if(u8_fat_fs_cnt >= 10)
+  {
+    u8_fat_fs_cnt = 0;
+    SDTimer_Handler();
+  }
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM3) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.

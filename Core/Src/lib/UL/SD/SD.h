@@ -41,6 +41,6 @@ DRESULT SD_disk_read (BYTE u8L_pdrv, BYTE* u8PL_buff, DWORD objL_sector, UINT u1
 DRESULT SD_disk_write (BYTE u8L_pdrv, const BYTE* u8PL_buff, DWORD objL_sector, UINT u16L_count);
 DRESULT SD_disk_ioctl (BYTE u8L_pdrv, BYTE u8L_ctrl, void* u8PL_buff);
 
-
+void sd_write(void);
 
 #endif /* SRC_LIB_UL_SD_SD_H_ */

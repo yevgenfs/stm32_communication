@@ -46,14 +46,14 @@ spi_err_t SPI_init(spi_t* objPL_this)
 void SPI_select(GPIO_TypeDef* objPL_port, uint16_t u16L_pin)
 {
   HAL_GPIO_WritePin(objPL_port, u16L_pin, GPIO_PIN_RESET);
-  HAL_Delay (1);
+//  HAL_Delay (1);
 }
 
 /* slave deselect */
 void SPI_deselect(GPIO_TypeDef* objPL_port, uint16_t u16L_pin)
 {
   HAL_GPIO_WritePin(objPL_port, u16L_pin, GPIO_PIN_SET);
-  HAL_Delay (1);
+//  HAL_Delay (1);
 }
 
 /* SPI transmit a byte */
